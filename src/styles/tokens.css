@@ -1,0 +1,16 @@
+:root {
+  --bg: #07070f;
+  --surface: #0e0e1a;
+  --surface-2: #141426;
+  --border: #2a2a4a;
+  --border-2: #3a3a6a;
+  --text: #f0eeff;
+  --text-2: #a09bbf;
+  --text-3: #6a6589;
+  --accent: #c084fc;
+  --accent-2: #e879a0;
+  --teal: #5eead4;
+  --font-display: "Cormorant Garamond", serif;
+  --font-body: "Outfit", sans-serif;
+  --font-mono: "DM Mono", monospace;
+}

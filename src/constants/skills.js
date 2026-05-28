@@ -1,0 +1,1 @@
+export { heroChips, skillCategories, stats, web3Tags } from "../data/portfolioData";

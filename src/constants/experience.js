@@ -1,0 +1,1 @@
+export { contacts, experienceItems } from "../data/portfolioData";
