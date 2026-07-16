@@ -3,8 +3,8 @@ import { Canvas, useFrame } from "@react-three/fiber";
 import { Float, Outlines } from "@react-three/drei";
 
 const SCROLL_ANCHORS = [
-  { x: 0.07, y: 0.14 },
-  { x: 0.84, y: 0.2 },
+  { x: 0.84, y: 0.14 },
+  { x: 0.07, y: 0.2 },
   { x: 0.1, y: 0.42 },
   { x: 0.8, y: 0.58 },
   { x: 0.12, y: 0.78 },
