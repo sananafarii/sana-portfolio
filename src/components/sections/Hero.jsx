@@ -1,10 +1,14 @@
 import { heroChips, stats } from "../../constants/skills";
+import { ComputersCanvas } from "../canvas";
 import { FadeIn } from "../common";
 import { Chip, StatBlock } from "../ui";
 
 const Hero = () => {
   return (
     <section className="hero">
+      <div className="hero-canvas-wrap">
+        <ComputersCanvas />
+      </div>
       <div className="hero-inner">
         <FadeIn>
           <div className="hero-tag">Frontend Developer</div>

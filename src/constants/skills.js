@@ -1,1 +1,1 @@
-export { heroChips, skillCategories, stats, web3Tags } from "../data/portfolioData";
+export { heroChips, skillCategories, stats, techOrbit, web3Tags } from "../data/portfolioData";

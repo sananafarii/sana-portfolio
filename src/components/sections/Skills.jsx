@@ -1,4 +1,5 @@
-import { skillCategories, web3Tags } from "../../constants/skills";
+import { skillCategories, techOrbit, web3Tags } from "../../constants/skills";
+import { BallCanvas } from "../canvas";
 import { FadeIn, SectionEyebrow } from "../common";
 import { SkillCategory } from "../ui";
 
@@ -13,6 +14,17 @@ const Skills = () => {
           Crafted with the <em>right tools</em>
         </h2>
       </FadeIn>
+      <FadeIn>
+        <div className="tech-orbit">
+          {techOrbit.map((tech) => (
+            <div className="tech-orbit__item" key={tech.name}>
+              <BallCanvas color={tech.color} icon={tech.icon} />
+              <span className="tech-orbit__label">{tech.name}</span>
+            </div>
+          ))}
+        </div>
+      </FadeIn>
+
       <FadeIn>
         <div className="skills-grid">
           {skillCategories.map((category) => (

@@ -49,6 +49,39 @@ export const skillCategories = [
   },
 ];
 
+export const techOrbit = [
+  {
+    name: "React",
+    color: "#61dafb",
+    icon: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/react/react-original.svg",
+  },
+  {
+    name: "Next.js",
+    color: "#ffffff",
+    icon: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/nextjs/nextjs-original.svg",
+  },
+  {
+    name: "TypeScript",
+    color: "#3178c6",
+    icon: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/typescript/typescript-original.svg",
+  },
+  {
+    name: "Three.js",
+    color: "#c084fc",
+    icon: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/threejs/threejs-original.svg",
+  },
+  {
+    name: "Tailwind",
+    color: "#38bdf8",
+    icon: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/tailwindcss/tailwindcss-original.svg",
+  },
+  {
+    name: "Node.js",
+    color: "#339933",
+    icon: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/nodejs/nodejs-original.svg",
+  },
+];
+
 export const web3Tags = [
   "WalletConnect v2",
   "Socket.io real-time",

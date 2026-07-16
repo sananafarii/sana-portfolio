@@ -1,9 +1,12 @@
+import { FloatingRocket, StarsCanvas } from "../canvas";
 import { Footer, Nav } from "../layout";
 import { Contact, Experience, Hero, Projects, Skills } from "../sections";
 
 const PortfolioPage = () => {
   return (
     <div className="portfolio-shell">
+      <StarsCanvas />
+      <FloatingRocket />
       <div className="noise" />
       <div className="grid-bg" />
       <div className="orb orb1" />
