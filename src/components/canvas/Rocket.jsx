@@ -2,36 +2,138 @@ import { Suspense, useEffect, useRef } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Float, Outlines } from "@react-three/drei";
 
-const SCROLL_ANCHORS = [
-  { x: 0.84, y: 0.14 },
-  { x: 0.07, y: 0.2 },
-  { x: 0.1, y: 0.42 },
-  { x: 0.8, y: 0.58 },
-  { x: 0.12, y: 0.78 },
-  { x: 0.75, y: 0.9 },
-];
+const HERO_ANCHOR = { x: 0.84, y: 0.14 };
 
 const lerp = (start, end, amount) => start + (end - start) * amount;
 
 const smoothstep = (value) => value * value * (3 - 2 * value);
 
-const getScrollProgress = () => {
-  const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
-  if (maxScroll <= 0) return 0;
-  return Math.min(Math.max(window.scrollY / maxScroll, 0), 1);
+const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+
+const getOrbitBounds = () => {
+  const orbit = document.querySelector(".tech-orbit");
+  if (!orbit) return null;
+
+  const rect = orbit.getBoundingClientRect();
+  return {
+    top: window.scrollY + rect.top,
+    bottom: window.scrollY + rect.bottom,
+  };
 };
 
-const getAnchorPosition = (progress) => {
-  const scaled = progress * (SCROLL_ANCHORS.length - 1);
-  const index = Math.min(Math.floor(scaled), SCROLL_ANCHORS.length - 2);
-  const fraction = smoothstep(scaled - index);
-  const current = SCROLL_ANCHORS[index];
-  const next = SCROLL_ANCHORS[index + 1];
+const getPlanetAnchors = () =>
+  [...document.querySelectorAll(".tech-orbit__item[data-planet-index]")]
+    .sort((a, b) => Number(a.dataset.planetIndex) - Number(b.dataset.planetIndex))
+    .map((element) => {
+      const planetEl = element.querySelector(".canvas-planet") ?? element;
+      const rect = planetEl.getBoundingClientRect();
+      return {
+        x: rect.left + rect.width / 2,
+        bottom: rect.bottom,
+      };
+    });
+
+const getHeroTarget = (rocketWidth, rocketHeight, time) => {
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+  const padding = 16;
+  const navOffset = 88;
+  const orbitX = Math.sin(time * 0.42) * Math.min(viewportWidth * 0.045, 42);
+  const orbitY = Math.sin(time * 0.34 + 1.1) * Math.min(viewportHeight * 0.035, 36);
 
   return {
-    x: lerp(current.x, next.x, fraction),
-    y: lerp(current.y, next.y, fraction),
+    x: clamp(HERO_ANCHOR.x * viewportWidth + orbitX, padding, viewportWidth - rocketWidth - padding),
+    y: clamp(HERO_ANCHOR.y * viewportHeight + orbitY, navOffset, viewportHeight - rocketHeight - padding),
+    rotation: Math.sin(time * 0.55) * 6 + orbitX * 0.08,
+    scale: 1,
   };
+};
+
+const TOUR_SCALE_MIN = 0.18;
+const TOUR_SCALE_MAX = 0.28;
+const BELOW_PLANET_GAP = 6;
+
+const getPlanetTourTarget = (progress, planetAnchors, rocketWidth, time) => {
+  const count = planetAnchors.length;
+  if (count === 0) return null;
+
+  const segmentSize = 1 / count;
+  const index = Math.min(Math.floor(progress / segmentSize), count - 1);
+  const localProgress = (progress - index * segmentSize) / segmentSize;
+  const planet = planetAnchors[index];
+
+  const orbitX = Math.sin(time * 0.42) * 4;
+  const orbitY = Math.sin(time * 0.34 + 1.1) * 3;
+
+  let scale = TOUR_SCALE_MIN;
+  if (localProgress < 0.22) {
+    scale = lerp(TOUR_SCALE_MIN, TOUR_SCALE_MAX, smoothstep(localProgress / 0.22));
+  } else if (localProgress > 0.78) {
+    scale = lerp(TOUR_SCALE_MAX, TOUR_SCALE_MIN, smoothstep((localProgress - 0.78) / 0.22));
+  } else {
+    scale = TOUR_SCALE_MAX;
+  }
+
+  const scaledWidth = rocketWidth * scale;
+
+  return {
+    x: planet.x - scaledWidth / 2 + orbitX,
+    y: planet.bottom + BELOW_PLANET_GAP + orbitY,
+    rotation: Math.sin(time * 0.55) * 2,
+    scale,
+  };
+};
+
+const getRocketTarget = (time, rocketWidth, rocketHeight) => {
+  const scrollY = window.scrollY;
+  const viewportHeight = window.innerHeight;
+  const hero = { ...getHeroTarget(rocketWidth, rocketHeight, time), inTour: false };
+  const orbitBounds = getOrbitBounds();
+  const planetAnchors = getPlanetAnchors();
+
+  if (!orbitBounds || planetAnchors.length === 0) {
+    return hero;
+  }
+
+  const tourStart = orbitBounds.top - viewportHeight * 0.32;
+  const tourEnd = orbitBounds.bottom + viewportHeight * 0.12;
+  const approachStart = tourStart - viewportHeight * 0.35;
+
+  if (scrollY > tourEnd) {
+    return hero;
+  }
+
+  if (scrollY >= tourStart) {
+    const tourLength = Math.max(tourEnd - tourStart, 1);
+    const progress = clamp((scrollY - tourStart) / tourLength, 0, 1);
+    const tourTarget = getPlanetTourTarget(progress, planetAnchors, rocketWidth, time);
+    if (tourTarget) return { ...tourTarget, inTour: true };
+  }
+
+  if (scrollY >= approachStart && scrollY < tourStart) {
+    const approachProgress = smoothstep((scrollY - approachStart) / Math.max(tourStart - approachStart, 1));
+    const firstPlanet = planetAnchors[0];
+    const orbitX = Math.sin(time * 0.42) * 4;
+    const orbitY = Math.sin(time * 0.34 + 1.1) * 3;
+    const approachScale = TOUR_SCALE_MIN;
+    const approachTarget = {
+      x: firstPlanet.x - rocketWidth * approachScale / 2 + orbitX,
+      y: firstPlanet.bottom + BELOW_PLANET_GAP + orbitY,
+      rotation: 0,
+      scale: approachScale,
+      inTour: true,
+    };
+
+    return {
+      x: lerp(hero.x, approachTarget.x, approachProgress),
+      y: lerp(hero.y, approachTarget.y, approachProgress),
+      rotation: lerp(hero.rotation, approachTarget.rotation, approachProgress),
+      scale: lerp(hero.scale, approachTarget.scale, approachProgress),
+      inTour: approachProgress > 0.4,
+    };
+  }
+
+  return hero;
 };
 
 const FIN_ANGLES = [0, (2 * Math.PI) / 3, (4 * Math.PI) / 3];
@@ -180,36 +282,21 @@ const FloatingRocket = () => {
   const motionRef = useRef(null);
 
   useEffect(() => {
-    const setTransform = (x, y, rotation) => {
+    const setTransform = (x, y, rotation, scale = 1, inTour = false) => {
       if (!rocketRef.current) return;
-      rocketRef.current.style.transform = `translate3d(${x}px, ${y}px, 0) rotate(${rotation}deg)`;
+      rocketRef.current.style.transform = `translate3d(${x}px, ${y}px, 0) rotate(${rotation}deg) scale(${scale})`;
+      rocketRef.current.style.zIndex = inTour ? "1" : "3";
     };
 
     const getTarget = (time) => {
-      const anchor = getAnchorPosition(getScrollProgress());
-      const viewportWidth = window.innerWidth;
-      const viewportHeight = window.innerHeight;
       const rocketWidth = rocketRef.current?.offsetWidth ?? 180;
       const rocketHeight = rocketRef.current?.offsetHeight ?? 220;
-      const padding = 16;
-      const navOffset = 88;
-
-      const orbitX = Math.sin(time * 0.42) * Math.min(viewportWidth * 0.045, 42);
-      const orbitY = Math.sin(time * 0.34 + 1.1) * Math.min(viewportHeight * 0.035, 36);
-      const targetX = anchor.x * viewportWidth + orbitX;
-      const targetY = anchor.y * viewportHeight + orbitY;
-      const targetRotation = Math.sin(time * 0.55) * 6 + orbitX * 0.08;
-
-      return {
-        x: Math.min(Math.max(targetX, padding), viewportWidth - rocketWidth - padding),
-        y: Math.min(Math.max(targetY, navOffset), viewportHeight - rocketHeight - padding),
-        rotation: targetRotation,
-      };
+      return getRocketTarget(time, rocketWidth, rocketHeight);
     };
 
     const initialTarget = getTarget(0);
     motionRef.current = { ...initialTarget };
-    setTransform(initialTarget.x, initialTarget.y, initialTarget.rotation);
+    setTransform(initialTarget.x, initialTarget.y, initialTarget.rotation, initialTarget.scale, initialTarget.inTour);
 
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (prefersReducedMotion) return undefined;
@@ -220,10 +307,12 @@ const FloatingRocket = () => {
       const target = getTarget(timestamp * 0.001);
       const motion = motionRef.current;
 
-      motion.x = lerp(motion.x, target.x, 0.06);
-      motion.y = lerp(motion.y, target.y, 0.06);
+      motion.x = lerp(motion.x, target.x, 0.07);
+      motion.y = lerp(motion.y, target.y, 0.07);
       motion.rotation = lerp(motion.rotation, target.rotation, 0.08);
-      setTransform(motion.x, motion.y, motion.rotation);
+      motion.scale = lerp(motion.scale, target.scale, 0.09);
+      motion.inTour = target.inTour;
+      setTransform(motion.x, motion.y, motion.rotation, motion.scale, motion.inTour);
 
       frameId = window.requestAnimationFrame(animate);
     };
